@@ -1,0 +1,26 @@
+## Interface: 120000, 120001, 120005, 120007, 120100, 120105, 16001
+## Title: |cff0cd29fEllesmereUI|r Bag Cleaner
+## Category: |cff0cd29fEllesmere|rUI
+## Group: EllesmereUI
+## Notes: The cheapest items in your bags on a small bar: click to delete (sell at a vendor), right-click to ignore.
+## Author: Dworak
+## Version: 9.4
+## Dependencies: EllesmereUI, EllesmereUIDworak
+## OptionalDeps: Auctionator, TradeSkillMaster
+## SavedVariables: EllesmereUIBagCleanerDB
+## IconTexture: Interface\AddOns\EllesmereUI\media\eg-logo.tga
+
+# Note: Bindings.xml (the Pick Up Cheapest Item key) is intentionally NOT listed
+# here -- WoW auto-loads a file named Bindings.xml from the addon root, and
+# listing it as well registers every <Binding> twice.
+
+# Module database (EllesmereUI profile store) and shared helpers
+EllesmereUIBagCleaner.lua
+
+# Core
+EllesmereUIBagCleaner_Prices.lua
+EllesmereUIBagCleaner_Bar.lua
+EllesmereUIBagCleaner_Ignore.lua
+
+# Options page (Dworak > Bag Cleaner in the EllesmereUI panel, through EllesmereUIDworak)
+EllesmereUIBagCleaner_Options.lua

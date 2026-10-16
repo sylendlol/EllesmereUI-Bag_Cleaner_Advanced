@@ -1,0 +1,3 @@
+<Bindings>
+	<Binding name="EUI_BAGCLEANER_PICKUP" header="EUI_BAGCLEANER" category="EllesmereUI">EUI_BagCleaner_PickUp()</Binding>
+</Bindings>
