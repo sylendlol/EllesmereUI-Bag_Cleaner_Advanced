@@ -36,7 +36,7 @@ ns.BagCleaner = BS
 -- Rules (same numbers as Naowh's Bag Space)
 local R = {
     SCAN_DELAY = 0.2, FULL_SHOW = 20, FULL_SLACK = 0.1, OUTLEVEL = 10, MERGE_STEPS = 60,
-    QUEST_CONFIRM = 5, EDGE_COLORED = 2, DIRECT_DELETE = 1, PLAIN_BAG = 0, LOW_SHARE = 0.1,
+    QUEST_CONFIRM = 5, FOLLOW_UP = 0.6, EDGE_COLORED = 2, DIRECT_DELETE = 1, PLAIN_BAG = 0, LOW_SHARE = 0.1,
 }
 -- The reagent bag (its own equipped slot) only takes reagents: its empty
 -- slots are no room for loot, so it is left out of the free count, the scan
@@ -465,9 +465,17 @@ BINDING_HEADER_EUI_BAGCLEANER = "Bag Cleaner"
 BINDING_NAME_EUI_BAGCLEANER_PICKUP = "Pick Up Cheapest Item"
 BS.BINDING = "EUI_BAGCLEANER_PICKUP"
 
+-- A second pass a moment after a click (delete, sell, ignore): the scan
+-- right after the bag update can draw the reshuffled row before the client
+-- has settled; this redraws it the way moving an item in the bags does.
+local function FollowUp()
+    C_Timer.After(R.FOLLOW_UP, function() BS.RequestScan() end)
+end
+
 local function OnClick(self, button)
     local e = self.pick
     if not e or unlocked then return end
+    FollowUp()
     local p = Snapshot(e)
     if IsModifiedClick("CHATLINK") then
         if ChatFrameUtil and ChatFrameUtil.InsertLink then
@@ -860,6 +868,7 @@ local function Layout(view, shown, freeW, stackW)
         end
         b:SetPoint("TOPLEFT", view, "TOPLEFT", L.PAD + x, top - y)
         b.price:SetShown(prices)
+        b:SetAlpha(1)
         b:Show()
     end
     for i = n + 1, #cells do cells[i]:Hide() end
@@ -1058,9 +1067,62 @@ local function Render()
         return
     end
     Draw(frame, picks, shown, free, total, offerStack and stackSaves or 0)
+    BS.CheckCells(shown)
     if justFull and Get("flashFull") then Flash(frame) end
     -- Mouseover: the dispatcher's hover scan owns Show/Hide.
     if vis ~= "mouseover" then frame:Show() end
+end
+
+-------------------------------------------------------------------------------
+--  Self-check: one frame after a render, every shown cell must be on screen
+--  (shown, anchored, opaque, sized, with an icon). A cell that is not gets
+--  redrawn once; /bagcleaner debug prints what was wrong.
+-------------------------------------------------------------------------------
+local checkPending, healing, debugCells = false, false, false
+
+local function CellProblem(b)
+    if not b then return "missing" end
+    if not b:IsShown() then return "hidden" end
+    if b:GetNumPoints() == 0 then return "no anchor" end
+    if not b:GetLeft() then return "no position" end
+    if b:GetAlpha() < 0.99 then return ("alpha %.2f"):format(b:GetAlpha()) end
+    if b:GetWidth() < 2 or b:GetHeight() < 2 then return ("size %.1fx%.1f"):format(b:GetWidth(), b:GetHeight()) end
+    if not b.icon:GetTexture() then return "no icon" end
+    if b.icon:GetAlpha() < 0.99 or not b.icon:IsShown() then return "icon hidden" end
+end
+
+local function CheckNow(shown)
+    checkPending = false
+    if not (frame and frame:IsShown()) or unlocked then return end
+    for i = 1, shown do
+        local why = CellProblem(frame.cells[i])
+        if why then
+            if debugCells then
+                ns.Print(("debug: cell %d of %d was not drawn (%s)%s."):format(i, shown, why,
+                    healing and ", still wrong after a redraw" or ", redrawing"))
+            end
+            if healing then
+                healing = false
+                return
+            end
+            healing = true
+            Render()
+            return
+        end
+    end
+    if healing and debugCells then ns.Print("debug: redraw fixed it.") end
+    healing = false
+end
+
+function BS.CheckCells(shown)
+    if checkPending then return end
+    checkPending = true
+    C_Timer.After(0, function() CheckNow(math.min(shown, #frame.cells)) end)
+end
+
+function BS.ToggleDebug()
+    debugCells = not debugCells
+    ns.Print("debug messages " .. (debugCells and "on" or "off") .. ".")
 end
 
 local events = CreateFrame("Frame")

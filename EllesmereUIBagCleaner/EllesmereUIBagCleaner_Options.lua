@@ -457,4 +457,10 @@ DW.AddModule({
 -- /bagcleaner (or the old /bagslots) opens this page.
 SLASH_EUIBAGCLEANER1 = "/bagcleaner"
 SLASH_EUIBAGCLEANER2 = "/bagslots"   -- the old name keeps working
-SlashCmdList.EUIBAGCLEANER = function() DW.Open("BagCleaner") end
+SlashCmdList.EUIBAGCLEANER = function(msg)
+    if msg and msg:lower():match("^%s*debug") then
+        if ns.BagCleaner and ns.BagCleaner.ToggleDebug then ns.BagCleaner.ToggleDebug() end
+        return
+    end
+    DW.Open("BagCleaner")
+end

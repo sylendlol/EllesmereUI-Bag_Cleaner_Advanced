@@ -76,6 +76,7 @@ its own **Search Module Settings** box.
 ## Slash commands
 
 - `/bagcleaner` opens the settings page.
+- `/bagcleaner debug` turns diagnostic messages on or off (see [CHANGELOG.md](CHANGELOG.md)).
 
 ## Files
 
